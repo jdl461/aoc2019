@@ -7,7 +7,7 @@ let rec calc_fuel weight =
     let fuel = (weight / 3) - 2 in 
     (calc_fuel fuel) + fuel
 
-let weights = List.map (In_channel.read_lines "input.txt") ~f:Int.of_string
+let weights = List.map (In_channel.read_lines "01/input.txt") ~f:Int.of_string
 let fuels = List.map weights ~f:calc_fuel
 let sum = List.sum (module Int) fuels ~f:ident
 let () = print_endline (Int.to_string sum)
