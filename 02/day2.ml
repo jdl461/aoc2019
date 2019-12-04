@@ -30,12 +30,9 @@ let rec execute pc data =
 
 let run (noun, verb) =
   let o = Array.map (Array.of_list (String.split ~on:',' input)) ~f:Int.of_string in
-  (* let () = print_endline (List.to_string ~f:Int.to_string (Array.to_list o)) in *)
   let () = Array.set o 1 noun in
   let () = Array.set o 2 verb in
-  (* let () = print_endline (List.to_string ~f:Int.to_string (Array.to_list o)) in *)
   let result = execute 0 o in
-  (* let () = print_endline (List.to_string ~f:Int.to_string (Array.to_list o)) in *)
   let () = print_endline (Int.to_string result ^ " " ^ Int.to_string noun ^ " " ^ Int.to_string verb) in
   match result with
   | 19690720 -> (noun, verb)
