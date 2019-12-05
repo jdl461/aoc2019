@@ -1,39 +1,83 @@
 open Core
 
-let input = In_channel.read_lines "03/input.txt"
-let paths = List.map ~f:(String.split ~on:',') input
+(* let input = In_channel.read_lines "03/input.txt" *)
+(* let paths = List.map ~f:(String.split ~on:',') input *)
+(* let path1 = List.nth_exn paths 0 *)
+(* let path2 = List.nth_exn paths 1 *)
+
+
+(* let path1 = ["R8";"U5";"L5";"D3"] *)
+let path1 = ["R75";"D30";"R83";"U83";"L12";"D49";"R71";"U7";"L72"]
+
+(* let path2 = ["U7";"R6";"D4";"L4"] *)
+let path2 = ["U62";"R66";"U55";"R34";"D71";"R55";"D58";"R83"]
 
 let direction path = String.prefix path 1
 let distance path dir = String.chop_prefix_exn path ~prefix:dir |> Int.of_string
 
-let manhattan_distance (x1,y1) (x2,y2) = abs(x1 - x2) + abs(y1 - y2)
+let point_to_string (x, y) = (Int.to_string x) ^ ":" ^ (Int.to_string y)
+let string_to_point s = let splits = String.split ~on:':' s in
+  match splits with
+  | [a;b] -> (Int.of_string a, Int.of_string b)
+  | _ -> failwith "Nope"
 
-let move (x1,y1) direction distance =
-  match direction with
-  | "L" -> (x1 - distance, y1)
-  | "R" -> (x1 + distance, y1)
-  | "U" -> (x1, y1 + distance)
-  | "D" -> (x1, y1 - distance)
-  | _ -> raise (Invalid_argument(direction))
+let move (x,y) direction distance =
+  match direction with 
+  | "L" -> List.map (List.range ~stride:(-1) (x - 1) (x - 1 - distance)) ~f:(fun x2 -> point_to_string (x2, y))
+  | "R" -> List.map (List.range ~stride:(1) x (x + distance + 1)) ~f:(fun x2 -> point_to_string (x2, y))
+  | "U" -> List.map (List.range ~stride:(1) y (y + distance + 1)) ~f:(fun y2 -> point_to_string (x, y2))
+  | "D" -> List.map (List.range ~stride:(-1) (y - 1) (y - 1 - distance)) ~f:(fun y2 -> point_to_string (x, y2))
+  | _ -> raise (Invalid_argument("unknown direction " ^ direction))
 
+let hash = Hashtbl.create (module String)
 
-let p1 = ["R8";"U5";"L5";"D3"]
-let p2 = ["U7";"R6";"D4";"L4"]
+let update_hash h point v = 
+  let freq_data = Hashtbl.find h point in
+  let newCount = match freq_data with
+    | Some c -> c
+    | None -> v in
+  Hashtbl.set h ~key:point ~data:newCount
 
-let r = List.fold p1 ~init:[(1,1)] 
-    ~f:(fun acc segment -> 
-        let dir = direction segment in
-        let dist = distance segment dir in
-        let point = move (List.last_exn acc) dir dist in
-        List.append acc [point]
-      )
+let p1 = List.fold path1 ~init:("1:1", 0)
+    ~f:(
+      fun (point, total) a -> 
+        let dir = direction a in
+        let dist = distance a dir in
+        let points = move (string_to_point point) dir dist in
+        let () = List.iteri points ~f:(fun i key -> update_hash hash key (total + i + 1)) in
+        (List.last_exn points, total + dist)
+    )
 
-let r2 = List.fold p2 ~init:[(1,1)] 
-    ~f:(fun acc segment -> 
-        let dir = direction segment in
-        let dist = distance segment dir in
-        let point = move (List.last_exn acc) dir dist in
-        List.append acc [point]
-      )
-let () = print_endline (List.to_string ~f:(fun (x,y) -> (Int.to_string x) ^ "," ^ (Int.to_string y)) r)
-let () = print_endline (List.to_string ~f:(fun (x,y) -> (Int.to_string x) ^ "," ^ (Int.to_string y)) r2)
+(* let () = Hashtbl.iteri hash ~f:(
+    fun ~key ~data -> print_endline (key ^ " " ^ Int.to_string data)
+   ) *)
+
+let intersections = Hashtbl.create (module String)
+
+let print_intersections h = Hashtbl.iteri h ~f:(
+    fun ~key:point ~data:freq -> print_endline (point ^ " " ^ Int.to_string freq)
+  )
+
+let update_intersections h point v =
+  let freq = Hashtbl.find h point in
+  match freq with
+  | Some f -> ()
+  | None -> Hashtbl.set h ~key:point ~data:v
+
+let p2 = List.fold path2 ~init:("1:1", 0)
+    ~f:(
+      fun (point, total) a -> 
+        let dir = direction a in
+        let dist = distance a dir in
+        let points = move (string_to_point point) dir dist in
+        let () = List.iteri points 
+            ~f:(
+              fun i point -> let p = Hashtbl.find hash point in
+                match p with
+                | Some f -> update_intersections intersections point (total + i + 1 + f)
+                | None -> ()
+            ) in
+        (List.last_exn points, total + dist)
+    )
+
+let () = print_intersections intersections
