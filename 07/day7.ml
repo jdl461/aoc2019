@@ -108,15 +108,11 @@ let rec execute pc data input_stack output_stack =
 
 
 let run_sequence phases =
-  let () = print_endline  @@ "Phases: " ^ (List.to_string phases ~f:ident) in
-  let signal = List.fold phases ~init:"0" 
-      ~f:(
-        fun acc a -> let output = execute 0 get_instructions [a; acc] [] in
-          List.last_exn output
-      ) in
-  let () = print_endline ("Signal: " ^ signal )in
-  signal
-
+  List.fold phases ~init:"0" 
+    ~f:(
+      fun acc a -> let output = execute 0 get_instructions [a; acc] [] in
+        List.last_exn output
+    )
 
 (* note that in order to preserve certain order 
    and also show the conciseness of the implementation, 
