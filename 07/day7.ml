@@ -1,8 +1,8 @@
 open Core
 
-(* let data = In_channel.read_all "07/input.txt" *)
-let data = "3,31,3,32,1002,32,10,32,1001,31,-2,31,1007,31,0,33,1002,33,7,33,1,33,31,31,1,32,31,31,4,31,99,0,0,0"
+let data = In_channel.read_all "07/input.txt"
 let get_instructions = Array.append (Array.of_list (String.split ~on:',' data)) (Array.create ~len:5000 "0")
+
 
 let parse_opcode instruction = 
   match instruction with
@@ -23,6 +23,7 @@ let parse_opcode instruction =
     |     [_;o;p] -> String.of_char_list [o;p]
     | _ -> failwith ("Invalid opcode " ^ instruction)
 
+
 let parse_modes instruction =
   let lst = String.to_list instruction in
   match (lst) with
@@ -31,6 +32,7 @@ let parse_modes instruction =
   |     [c;_;_] -> ("0", "0", Char.to_string c)
   | _ -> ("0", "0", "0")
 
+
 let get_param data offset mode = 
   match mode with
   | "0" -> let mem = Int.of_string data.(offset) in
@@ -38,8 +40,10 @@ let get_param data offset mode =
   | "1" -> data.(offset)
   | _ -> failwith ("Invalid mode " ^ mode)
 
+
 let set_param (data : string array) (offset : int) (param : string) =
   data.(offset) <- param
+
 
 (* returns the next pc *)
 let execute_instruction pc data input_stack output_stack =
@@ -104,11 +108,35 @@ let rec execute pc data input_stack output_stack =
 
 
 let run_sequence phases =
-  List.fold phases ~init:"0" 
-    ~f:(
-      fun acc a -> let output = execute 0 get_instructions [a; acc] [] in
-        List.last_exn output
-    )
+  let () = print_endline  @@ "Phases: " ^ (List.to_string phases ~f:ident) in
+  let signal = List.fold phases ~init:"0" 
+      ~f:(
+        fun acc a -> let output = execute 0 get_instructions [a; acc] [] in
+          List.last_exn output
+      ) in
+  let () = print_endline ("Signal: " ^ signal )in
+  signal
 
-let output = run_sequence ["1"; "0"; "4"; "3"; "2"]
-let () = print_endline output
+
+(* note that in order to preserve certain order 
+   and also show the conciseness of the implementation, 
+   no tail-recursive is used *)
+let ins_all_positions x l =
+  let rec aux prev acc = function
+    | [] -> (prev @ [x]) :: acc |> List.rev
+    | hd::tl as l -> aux (prev @ [hd]) ((prev @ [x] @ l) :: acc) tl
+  in
+  aux [] [] l
+
+let rec permutations = function
+  | [] -> []
+  | x::[] -> [[x]] (* we must specify this edge case *)
+  | x::xs -> List.fold ~f:(fun acc p -> acc @ ins_all_positions x p ) ~init:[] (permutations xs)
+
+let phases = permutations ["0";"1";"2";"3";"4"]
+
+let signals = List.map phases ~f:run_sequence
+let output = List.max_elt signals ~compare:(fun a b -> Int.compare (Int.of_string a) (Int.of_string b))
+let () = match output with
+  | Some signal -> print_endline signal
+  | _ -> failwith "No signal"
