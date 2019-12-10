@@ -1,3 +1,5 @@
 S .
+S ./07
 B _build
+B _build/07
 PKG core
