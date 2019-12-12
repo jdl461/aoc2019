@@ -1,1 +1,2 @@
 true: package(core)
+true: package(bignum)
