@@ -1,4 +1,5 @@
 S .
-B _build
+S lib/**
+B _build/**
 PKG core
 PKG bignum
