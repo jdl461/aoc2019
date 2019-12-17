@@ -4,22 +4,15 @@ type color = | Black | White
 type turn = | Turn_Left | Turn_Right
 type facing =  | Up | Down | Left | Right
 
-let map_color color = match color with
+let int_to_color color = match color with
   | 0 -> Black
   | 1 -> White
   | _ -> failwith "bad color value"
 
-let map_turn turn = match turn with
+let int_to_turn turn = match turn with
   | 0 -> Turn_Left
   | 1 -> Turn_Right
   | _ -> failwith "bad turn value"
-
-let map_facing facing = match facing with
-  | 0 -> Up
-  | 1 -> Down
-  | 2 -> Left
-  | 3 -> Right
-  | _ -> failwith "bad facing value"
 
 let data = In_channel.read_all "11/input.txt"
 
@@ -54,14 +47,14 @@ let update_pos pos (facing : facing) (dir : turn) =
 let process_outputs panels outputs (pos : string) facing = 
   match outputs with
   | color :: turn :: [] -> 
-    let () = update_panel panels pos (map_color (Int.of_string color)) in
-    update_pos pos facing (map_turn (Int.of_string turn))
+    let color = Int.of_string color in
+    let turn = Int.of_string turn in
+    let () = update_panel panels pos (int_to_color color) in
+    update_pos pos facing (int_to_turn turn)
   | _ -> failwith "bad output"
 
 
-let ship_panels : (string, color) Hashtbl.t = Hashtbl.create (module String)
-
-let rec run state pos facing =
+let rec run ship_panels state pos facing =
   let new_state = Intcode.execute state in
   match new_state.exit_code with
   | -1 -> new_state
@@ -73,21 +66,52 @@ let rec run state pos facing =
     let inp = match color with
       | Black -> "0"
       | White -> "1" in
-    run {
+    run ship_panels {
       new_state with 
       input_stack = [inp];
       output_stack = [];
     } new_pos new_facing
-  | 0 -> run new_state pos facing
+  | 0 -> run ship_panels new_state pos facing
   | _ -> failwith ("unknown exit code" ^ (Int.to_string new_state.exit_code))
 
-let finish = run {
-    pc = Bigint.of_int 0;
-    data = get_instructions ();
-    input_stack = ["0"];
-    output_stack = [];
-    exit_code = 0;
-    relative_base = 0;
-  } "0,0" Up
 
-let painted_panels = List.length (Hashtbl.keys ship_panels)
+let part1 () =
+  let ship_panels : (string, color) Hashtbl.t = Hashtbl.create (module String) in
+  let _ : Ampstate.amp_state = run ship_panels {
+      pc = Bigint.of_int 0;
+      data = get_instructions ();
+      input_stack = ["0"];
+      output_stack = [];
+      exit_code = 0;
+      relative_base = 0;
+    } "0,0" Up in
+  let painted_panels = List.length (Hashtbl.keys ship_panels) in
+  print_endline (Printf.sprintf "%d" painted_panels)
+
+let part2 () = 
+  let ship_panels : (string, color) Hashtbl.t = Hashtbl.create (module String) in
+
+  let _ : Ampstate.amp_state = run ship_panels {
+      pc = Bigint.of_int 0;
+      data = get_instructions ();
+      input_stack = ["1"];
+      output_stack = [];
+      exit_code = 0;
+      relative_base = 0;
+    } "0,0" Up in
+
+  let white_panels = Hashtbl.filter ship_panels 
+      ~f:(
+        fun color -> match color with 
+          | Black -> false
+          | White -> true
+      ) in
+
+
+  let lst = Hashtbl.keys white_panels |> List.map ~f:(
+      fun pos -> "(" ^ pos ^ ")"
+    ) in
+
+  let () = List.iter lst ~f:(fun p -> print_endline p) in
+
+  print_endline (Int.to_string (Hashtbl.length white_panels))
