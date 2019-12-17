@@ -69,7 +69,7 @@ let instruction_3 (amp_state : Ampstate.amp_state) mode : Ampstate.amp_state =
       exit_code = 0; 
     } 
   | None -> 
-    let () = print_endline ("No input, pausing") in
+    (* let () = print_endline ("No input, pausing") in *)
     { amp_state with exit_code = 1 }
 
 
