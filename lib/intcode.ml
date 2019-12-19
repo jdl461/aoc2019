@@ -69,7 +69,7 @@ let instruction_3 (amp_state : Ampstate.amp_state) mode : Ampstate.amp_state =
       exit_code = 0; 
     } 
   | None -> 
-    (* let () = print_endline ("No input, pausing") in *)
+    let () = print_endline ("Getting input") in
     { amp_state with exit_code = 1 }
 
 
@@ -104,7 +104,7 @@ let execute_instruction (amp_state : Ampstate.amp_state) : Ampstate.amp_state =
       amp_state with 
       pc = (Bigint.(+) amp_state.pc (Bigint.of_int 2)) ; 
       output_stack = output_stack ; 
-      exit_code = 0
+      exit_code = 2
     }
   | "05" -> 
     let a = Bigint.of_string (get_param amp_state (1) m1) in
