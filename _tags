@@ -1,2 +1,3 @@
 true: package(core)
 true: package(bignum)
+true: package(str)
