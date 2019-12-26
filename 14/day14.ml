@@ -18,8 +18,9 @@ let data () = [
   "7 A, 1 E => 1 FUEL";
 ]
 
+let make_chem name amount = { name; amount; }
+
 let add_input_to_table d t = 
-  let make_chem name amount = { name; amount; } in
   let add_chem t name amount prods = 
     Map.set t ~key:name 
       ~data:(amount, List.map prods ~f:(fun (name,amt) -> make_chem name amt )) in
@@ -63,24 +64,13 @@ let table =
   let d = data () in
   List.fold d ~init:init ~f:(fun acc a -> add_input_to_table a acc)
 
-let combine_terms chems = chems
+let combine terms = List.fold terms ~init:{name="";amount=0} 
+    ~f:(fun total chem -> {name = chem.name; amount = total.amount + chem.amount})
 
-let rec run chems table = 
-  let () = print_endline (Printf.sprintf "Processing: %s" (List.to_string chems ~f:chem_to_str) ) in
-  let combined = combine_terms chems in
-  let () = print_endline (Printf.sprintf "Combined: %s" (List.to_string combined ~f:chem_to_str) ) in
-  match combined with
+let rec combine_chems chems = 
+  match chems with 
   | [] -> []
-  | {name = "ORE"; _} as ore :: [] -> [ore]
-  | {name = "ORE"; _} as ore :: tl -> ore :: run tl table
-  | {name; amount} :: [] -> run (expand name amount table) table
-  | {name; amount} :: tl -> run (List.append (expand name amount table) tl) table
-
-
-let fuels = let f = expand "FUEL" 1 table in
-  run f table
-
-let () = List.iter fuels ~f:(fun chem -> print_endline (chem_to_str chem))
-
-let total = List.fold fuels ~init:0 ~f:(fun acc a -> a.amount + acc)
-let () = print_endline (Printf.sprintf "%d" total)
+  | chem :: [] -> [chem]
+  | chem :: _ -> 
+    let (p1,p2) = List.partition_tf chems ~f:(fun c -> String.equal c.name chem.name) in
+    (combine p1) :: combine_chems p2
