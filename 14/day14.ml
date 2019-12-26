@@ -144,8 +144,6 @@ let expand name required table =
     let xtra = (incr * amount) - required in
     let () = add_slop name xtra in
     let new_products = increase incr products in
-    let () = print_endline 
-        (Printf.sprintf "%d of %s (with %d extra) makes %s" (incr*amount) name xtra (chem_list_to_str new_products)) in
     new_products
   ) |> Option.value ~default:[]
 
@@ -162,7 +160,9 @@ let rec combine_chems chems =
 let step (chems : chem list) table = 
   let chems = combine_chems chems in
   let is_reduced = is_reduced chems table in
-  if is_reduced then chems else
+  if is_reduced 
+  then chems 
+  else
     List.fold chems ~init:[]
       ~f:(
         fun acc chem -> 
@@ -172,35 +172,46 @@ let step (chems : chem list) table =
       )
 
 let convert_to_ore chems table = 
-  let () = print_endline ("Converting to ore: " ^ (chem_list_to_str chems)) in
   List.map chems ~f:(
     fun c -> expand c.name c.amount table
   ) |> List.join
   |> combine_chems
 
-let part1 () = 
+let table = 
+  let init = Map.empty (module String) in
+  let d = data () in
+  List.fold d ~init:init ~f:(fun acc a -> add_input_to_table a acc)
+
+let calc_ore fuel = 
   let rec run chems table = 
     let is_reduced = is_reduced chems table in
     match is_reduced with
     | true -> convert_to_ore (combine_chems chems) table
     | false -> let s = step chems table in
-      let () = print_endline ("Output: " ^ (chem_list_to_str s)) in
       run s table in
 
-  let table = 
-    let init = Map.empty (module String) in
-    let d = data () in
-    List.fold d ~init:init ~f:(fun acc a -> add_input_to_table a acc) in
+  let ore = run [make_chem "FUEL" fuel] table in
+  match ore with
+  | ore :: [] -> ore.amount
+  | _ -> failwith "output error"
 
-  let (_, products) = 
-    let t = Map.find table "FUEL" in
-    match t with
-    | Some (a,p) -> 
-      let () = print_endline ("FUEL output: " ^ (chem_list_to_str p)) in
-      (a,p)
-    | None -> failwith ("No FUEL") in
+let p1 = calc_ore 1
+let () = print_endline (Int.to_string p1)
 
-  let ore = run products table in
-  print_endline (chem_list_to_str ore)
 
-let () = part1 ()
+let rec f lower upper target (fn : int -> int) =
+  let guess = (lower + upper) / 2 in
+  let r = fn guess in
+  let () = print_endline (Printf.sprintf "Trying %d = %d" guess r) in
+  if r = target
+  then guess
+  else if r < target then f (guess+1) upper target fn
+  else f lower (guess-1) target fn
+
+
+let lower = (1000000000000 / p1)
+let upper = lower * 2
+
+let x = f lower upper 1000000000000 calc_ore
+let () = print_endline (Int.to_string x)
+
